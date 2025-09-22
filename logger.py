@@ -5,8 +5,12 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-LOGS_PATH = str(os.getenv('LOGS_PATH'))
-LOGS_TEST_FILE = str(os.getenv('LOGS_TEST_FILE'))
+# ✅ Use env values if available, else fallback to defaults
+LOGS_PATH = os.getenv("LOGS_PATH", "logs")
+LOGS_TEST_FILE = os.getenv("LOGS_TEST_FILE", "TEST.log")
+
+# Ensure the logs folder exists (important for Render)
+os.makedirs(LOGS_PATH, exist_ok=True)
 
 class Logger:
     def __init__(self):
@@ -14,56 +18,33 @@ class Logger:
         self.__setupLogging__()
 
     def __setupLogging__(self):
+        log_file = os.path.join(self.logs_path, LOGS_TEST_FILE)
+
         logging.basicConfig(
-            filename=os.path.join(LOGS_PATH, LOGS_TEST_FILE),
+            filename=log_file,
             level=logging.INFO,
             format="%(message)s",
         )
 
+        # Silence noisy libs
         logging.getLogger("httpx").setLevel(logging.WARNING)
         logging.getLogger("urllib3").setLevel(logging.WARNING)
         logging.getLogger("openai").setLevel(logging.WARNING)
 
-    # def setupLogging(self):
-    #     event_log_file = os.path.join(self.logs_path, LOGS_TEST_FILE)
-    #     chat_log_file = os.path.join(self.logs_path, LOGS_CHAT_FILE)
-    #     error_log_file = os.path.join(self.logs_path, LOGS_ERROR_FILE)
-
-    #     self.chat_handler = logging.FileHandler(chat_log_file)
-    #     self.event_handler = logging.FileHandler(event_log_file)
-    #     self.error_handler = logging.FileHandler(error_log_file)
-
-    #     formatter = logging.Formatter("%(message)s")
-    #     self.chat_handler.setFormatter(formatter)
-    #     self.event_handler.setFormatter(formatter)
-    #     self.error_handler.setFormatter(formatter)
-
-    #     self.chat_logger = logging.getLogger("chat_logger")
-    #     self.event_logger = logging.getLogger("event_logger")
-    #     self.error_logger = logging.getLogger("error_logger")
-
-    #     self.chat_logger.addHandler(self.chat_handler)
-    #     self.chat_logger.setLevel(logging.INFO)
-
-    #     self.event_logger.addHandler(self.event_handler)
-    #     self.event_logger.setLevel(logging.INFO)
-
-    #     self.error_logger.addHandler(self.error_handler)
-    #     self.error_logger.setLevel(logging.ERROR)
-    
     def __getGMTOffset__(self):
         offset_minutes = datetime.now().astimezone().utcoffset().total_seconds() / 60
         hours = int(offset_minutes // 60)
         minutes = int(offset_minutes % 60)
         return f"GMT{hours:+02}:{minutes:02}"
 
-    def logEvent(self, msg_creator, msg, uid = None, cid = None):
+    def logEvent(self, msg_creator, msg, uid=None, cid=None):
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S") + " " + self.__getGMTOffset__()
 
         if msg_creator == "USER":
-            log_message = (f"[{timestamp}] | --> [{msg_creator}:{uid}:{cid}]: {msg}")
+            log_message = f"[{timestamp}] | --> [{msg_creator}:{uid}:{cid}]: {msg}"
         elif msg_creator == "RESP":
-            log_message = (f"[{timestamp}] | --> [{msg_creator}:{cid}]: {msg}")
+            log_message = f"[{timestamp}] | --> [{msg_creator}:{cid}]: {msg}"
         else:
-            log_message = (f"[{timestamp}] | [{msg_creator}]: {msg}")
+            log_message = f"[{timestamp}] | [{msg_creator}]: {msg}"
+
         logging.info(log_message)
