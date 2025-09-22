@@ -188,3 +188,6 @@ async def authenticate_endpoint(username: str = Form(...), password: str = Form(
         "userID": user[0],
         "role": user[1],
     }
+@app.get("/healthz")
+def health_check():
+    return {"status": "ok"}
