@@ -12,3 +12,4 @@ torch==2.7.1
 python-multipart
 gunicorn
 uvicorn
+psycopg2-binary
